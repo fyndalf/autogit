@@ -5,6 +5,8 @@ Don't you hate having to navigate to every single git repository in your `projec
 `autogit`, a small CLI tool built with rust, aims to solve this!
 Simply run `autogit` in the root `projects` folder (or wherever you have your git repos), and it will take a look at each repo and update it if possible.
 
+Please note that for now, `git` needs to be installed on your machine.
+
 ## Usage
 
 ```
@@ -46,11 +48,14 @@ cargo clippy
 is also enabled.
 
 ### Dependencies
-- quicli
-- git2
-- human-panic
-- console
-- indicatif
-- trust
+- [quicli](https://github.com/killercup/quicli)
+- [git2](https://github.com/rust-lang/git2-rs)
+- [structop](https://github.com/TeXitoi/structopt)
+- [human-panic](https://github.com/rust-cli/human-panic)
+- [console](https://github.com/mitsuhiko/console)
+- [indicatif](https://github.com/mitsuhiko/indicatif)
+- [trust](https://github.com/japaric/trust)
 
 ## To Dos
+- [ ] Add some tests
+- [ ] Use git2 for fetching and pulling instead of bash-ed git commands
