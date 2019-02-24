@@ -1,5 +1,7 @@
 # autogit
 
+[![Build Status](https://travis-ci.com/fyndalf/autogit.svg?token=pzxEnLQoVdYwoArquwFZ&branch=master)](https://travis-ci.com/fyndalf/autogit)
+
 Don't you hate having to navigate to every single git repository in your `projects` folder and update them all by hand?
 
 `autogit`, a small CLI tool built with rust, aims to solve this!
