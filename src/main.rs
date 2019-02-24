@@ -157,17 +157,17 @@ fn update_repo(
         .arg("pull")
         .output()
         .expect("Failed to execute command");
-    *update_count = *update_count + 1;
+    *update_count += 1;
     Ok(())
 }
 
 fn get_current_branch(repo: &Repository) -> Result<String, git2::Error> {
     let head = repo.head()?;
-    let mut path: Vec<&str> = head.name().unwrap().split("/").collect();
+    let mut path: Vec<&str> = head.name().unwrap().split('/').collect();
     let branch = path.pop();
     let branch_name = match branch {
         None => "master",
         Some(_) => branch.unwrap(),
     };
-    return Ok(branch_name.to_string());
+    Ok(branch_name.to_string())
 }
