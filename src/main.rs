@@ -53,9 +53,7 @@ fn main() -> CliResult {
     )?;
 
     spinner.finish_with_message("Finished updating");
-
     println!("{} Updated {} repositories", CHECK_BOX, update_count);
-
     Ok(())
 }
 
@@ -74,16 +72,17 @@ fn visit_dirs(
             if path.is_dir() {
                 // check git status and take actions, or recurse further
                 trace!("Checking {:?}", fs::canonicalize(&path));
-                match check_if_repo_is_clean(&dir, progress_bar) {
+                match check_if_repo_is_clean(&path, progress_bar) {
                     Ok(clean_repo) => {
                         if clean_repo || force_update {
-                            update_repo(&dir, force_update, progress_bar, update_count).expect(
-                                &format!("Failed to update repo {:?}", fs::canonicalize(&path)),
-                            );
+                            update_repo(&path, force_update, progress_bar, update_count)
+                                .unwrap_or_else(|_| {
+                                    panic!("Failed to update repo {:?}", fs::canonicalize(&path))
+                                });
                         }
                     }
                     Err(e) => {
-                        debug!("{} {:?}", ERROR, e);
+                        trace!("{} {:?}", ERROR, e);
                         if depth < max_depth {
                             visit_dirs(
                                 &path,
@@ -105,6 +104,7 @@ fn visit_dirs(
 fn check_if_repo_is_clean(dir: &PathBuf, progress_bar: &ProgressBar) -> Result<bool, git2::Error> {
     let repo = Repository::open(dir)?;
     let branch_name = get_current_branch(&repo)?;
+    let path = dir.as_os_str().to_str().unwrap();
 
     debug!(
         "Checking {} state={:?}",
@@ -120,6 +120,7 @@ fn check_if_repo_is_clean(dir: &PathBuf, progress_bar: &ProgressBar) -> Result<b
     // repo.find_remote("origin")?.fetch(&[&branch_name], None, None)?;
     // todo: authenticate and use git2 instead of command
     let _output = Command::new("git")
+        .current_dir(path)
         .arg("fetch")
         .output()
         .expect("Failed to execute command");
@@ -130,11 +131,12 @@ fn check_if_repo_is_clean(dir: &PathBuf, progress_bar: &ProgressBar) -> Result<b
     let cached_diff = repo.diff_tree_to_index(None, None, None)?;
     let cached_files_changed = cached_diff.stats()?.files_changed();
 
-    debug!(
+    trace!(
         "Numer of changed files:{}, number of changed cached files: {}",
-        files_changed, cached_files_changed
+        files_changed,
+        cached_files_changed
     );
-    Ok(repo.state() == RepositoryState::Clean && files_changed == 0 && cached_files_changed == 0)
+    Ok(repo.state() == RepositoryState::Clean && files_changed == 0)
 }
 
 fn update_repo(
@@ -144,16 +146,23 @@ fn update_repo(
     update_count: &mut u16,
 ) -> Result<(), git2::Error> {
     progress_bar.set_message("Updating ...");
+
     let repo = Repository::open(dir)?;
-    let _head = repo.head()?;
     let branch_name = get_current_branch(&repo)?;
-    let ref_name = format!("refs/remotes/origin/{}", branch_name);
+    let path = dir.as_os_str().to_str().unwrap();
+
     if force_update {
+        let _head = repo.head()?;
+        let ref_name = format!("refs/remotes/origin/{}", branch_name);
         let oid = repo.refname_to_id(&ref_name)?;
         let object = repo.find_object(oid, None).unwrap();
         repo.reset(&object, git2::ResetType::Hard, None)?;
     }
+
+    debug!("Updating {:?} {}", fs::canonicalize(&dir), branch_name);
+
     let _output = Command::new("git")
+        .current_dir(path)
         .arg("pull")
         .output()
         .expect("Failed to execute command");
