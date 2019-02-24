@@ -1,7 +1,7 @@
-use console::{style, Emoji};
+use console::Emoji;
 use git2::Repository;
 use git2::RepositoryState;
-use indicatif::{HumanDuration, MultiProgress, ProgressBar, ProgressStyle};
+use indicatif::{ProgressBar, ProgressStyle};
 use quicli::prelude::*;
 use std::env;
 use std::fs;
@@ -61,6 +61,7 @@ fn main() -> CliResult {
     Ok(())
 }
 
+// Recure through subdirectories up until given maximal depth
 fn visit_dirs(
     dir: &PathBuf,
     depth: usize,
@@ -86,7 +87,7 @@ fn visit_dirs(
                         }
                     }
                     Err(e) => {
-                        trace!("{} {:?}", ERROR, e);
+                        trace!("{} {:?}", ERROR, e); // errors are expected is folder is not a git directory
                         if depth < max_depth {
                             visit_dirs(
                                 &path,
@@ -105,6 +106,8 @@ fn visit_dirs(
     Ok(())
 }
 
+// Check if a folder contains a repository, without uncommited changes, and fetches from origin.
+// Fails if the directory does not contain a git directory.
 fn check_if_repo_is_clean(dir: &PathBuf, progress_bar: &ProgressBar) -> Result<bool, git2::Error> {
     let repo = Repository::open(dir)?;
     let branch_name = get_current_branch(&repo)?;
@@ -142,6 +145,7 @@ fn check_if_repo_is_clean(dir: &PathBuf, progress_bar: &ProgressBar) -> Result<b
     Ok(repo.state() == RepositoryState::Clean && files_changed == 0)
 }
 
+// Update a git repo on a given path. Discards changes when force is enabled.
 fn update_repo(
     dir: &PathBuf,
     force_update: bool,
@@ -165,6 +169,7 @@ fn update_repo(
 
     debug!("Updating {:?} {}", fs::canonicalize(&dir), branch_name);
 
+    // pull from origin
     let _output = Command::new("git")
         .current_dir(path)
         .arg("pull")
@@ -174,6 +179,7 @@ fn update_repo(
     Ok(())
 }
 
+// Gets the name of the currently checked out branch. Defaults to master.
 fn get_current_branch(repo: &Repository) -> Result<String, git2::Error> {
     let head = repo.head()?;
     let mut path: Vec<&str> = head.name().unwrap().split('/').collect();
