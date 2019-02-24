@@ -1,5 +1,5 @@
 [package]
-name = "rust-cli"
+name = "autogit"
 version = "0.1.0"
 authors = ["Finn K <fyndalf@users.noreply.github.com>"]
 edition = "2018"
