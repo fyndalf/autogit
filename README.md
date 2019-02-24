@@ -26,4 +26,16 @@ OPTIONS:
 
 ## Build from source
 
+```bash
+git clone git@github.com:fyndalf/autogit.git
+cargo build --release
+```
+
 ### Dependencies
+- quicli
+- git2
+- human-panic
+- console
+- indicatif
+
+## To Dos
