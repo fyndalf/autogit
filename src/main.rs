@@ -13,13 +13,13 @@ use structopt::StructOpt;
 #[macro_use]
 extern crate human_panic;
 
-/// Update all git repositories that are hidden in subfolders
+/// Update all git repositories that are located in subfolders
 #[derive(Debug, StructOpt)]
 struct Cli {
     /// How deep to check for git repositories
     #[structopt(long = "depth", short = "d", default_value = "3")]
     depth: usize,
-    /// Force reset and updating of current branch
+    /// Force resetting and updating of currently checked out branches
     #[structopt(long = "force", short = "f")]
     force: bool,
 }
