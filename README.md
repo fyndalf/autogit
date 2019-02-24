@@ -24,6 +24,13 @@ OPTIONS:
     -d, --depth <depth>    How deep to check for git repositories [default: 3]
 ```
 
+## Installation
+
+```bash
+curl -LSfs https://japaric.github.io/trust/install.sh | \
+sh -s -- --git fyndalf/autogit
+```
+
 ## Build from source
 
 ```bash
@@ -31,11 +38,19 @@ git clone git@github.com:fyndalf/autogit.git
 cargo build --release
 ```
 
+For development,
+```
+cargo fmt
+cargo clippy
+```
+is also enabled.
+
 ### Dependencies
 - quicli
 - git2
 - human-panic
 - console
 - indicatif
+- trust
 
 ## To Dos
