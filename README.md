@@ -47,7 +47,7 @@ For development,
 cargo fmt
 cargo clippy
 ```
-is also enabled.
+is also encouraged.
 
 ### Dependencies
 - [quicli](https://github.com/killercup/quicli)
