@@ -36,8 +36,11 @@ fn main() -> CliResult {
         "Updating all git repositories up to a depth of {}",
         args.depth
     );
-
+    let spinner_style = ProgressStyle::default_spinner()
+        .tick_chars("⠁⠂⠄⡀⢀⠠⠐⠈ ")
+        .template("{prefix:.bold.dim} {spinner} {wide_msg}");
     let spinner = ProgressBar::new_spinner();
+    spinner.set_style(spinner_style);
     spinner.enable_steady_tick(100);
 
     let path = env::current_dir()?;
@@ -51,7 +54,8 @@ fn main() -> CliResult {
         &spinner,
         &mut update_count,
     )?;
-
+    spinner.set_prefix("");
+    spinner.set_message("");
     spinner.finish_with_message("Finished updating");
     println!("{} Updated {} repositories", CHECK_BOX, update_count);
     Ok(())
@@ -105,14 +109,13 @@ fn check_if_repo_is_clean(dir: &PathBuf, progress_bar: &ProgressBar) -> Result<b
     let repo = Repository::open(dir)?;
     let branch_name = get_current_branch(&repo)?;
     let path = dir.as_os_str().to_str().unwrap();
-
     debug!(
         "Checking {} state={:?}",
         repo.path().display(),
         repo.state()
     );
     progress_bar.set_message(&format!("Checking {}", repo.path().display()));
-    // progress_bar.set_prefix(&format!("{} origin/{}", repo.path().display(), branch_name));
+    progress_bar.set_prefix(&format!("{} origin/{}", repo.path().display(), branch_name));
 
     // fetching branch
     progress_bar.set_message(&format!("Fetching origin/{}", branch_name));
@@ -123,7 +126,7 @@ fn check_if_repo_is_clean(dir: &PathBuf, progress_bar: &ProgressBar) -> Result<b
         .current_dir(path)
         .arg("fetch")
         .output()
-        .expect("Failed to execute command");
+        .expect("Failed to execute git fetch");
 
     let diff = repo.diff_index_to_workdir(None, None)?;
     let files_changed = diff.stats()?.files_changed();
@@ -145,11 +148,12 @@ fn update_repo(
     progress_bar: &ProgressBar,
     update_count: &mut u16,
 ) -> Result<(), git2::Error> {
-    progress_bar.set_message("Updating ...");
-
     let repo = Repository::open(dir)?;
     let branch_name = get_current_branch(&repo)?;
     let path = dir.as_os_str().to_str().unwrap();
+
+    progress_bar.set_message("Updating ...");
+    progress_bar.set_prefix(&format!("{} origin/{}", repo.path().display(), branch_name));
 
     if force_update {
         let _head = repo.head()?;
@@ -165,7 +169,7 @@ fn update_repo(
         .current_dir(path)
         .arg("pull")
         .output()
-        .expect("Failed to execute command");
+        .expect("Failed to execute git pull");
     *update_count += 1;
     Ok(())
 }
