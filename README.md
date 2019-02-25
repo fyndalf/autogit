@@ -1,6 +1,7 @@
 # autogit
 
-[![Build Status](https://travis-ci.com/fyndalf/autogit.svg?token=pzxEnLQoVdYwoArquwFZ&branch=master)](https://travis-ci.com/fyndalf/autogit)
+[![Build Status](https://travis-ci.com/fyndalf/autogit.svg?token=pzxEnLQoVdYwoArquwFZ&branch=master)](https://travis-ci.com/fyndalf/autogit) [![Build status](https://ci.appveyor.com/api/projects/status/t6bbq1611o5mjvgk/branch/master?svg=true)](https://ci.appveyor.com/project/fyndalf/autogit/branch/master)
+
 
 Don't you hate having to navigate to every single git repository in your `projects` folder and update them all by hand?
 
