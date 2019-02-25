@@ -87,7 +87,7 @@ fn visit_dirs(
                         }
                     }
                     Err(e) => {
-                        trace!("{} {:?}", ERROR, e); // errors are expected is folder is not a git directory
+                        trace!("{} {:?}", ERROR, e); // errors are expected when folder is not a git directory
                         if depth < max_depth {
                             visit_dirs(
                                 &path,
