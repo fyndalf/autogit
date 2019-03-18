@@ -10,6 +10,7 @@ use std::path::PathBuf;
 use std::process::Command;
 use structopt::StructOpt;
 
+// Used for nice error messages
 #[macro_use]
 extern crate human_panic;
 

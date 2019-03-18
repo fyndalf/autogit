@@ -62,3 +62,4 @@ is also encouraged.
 ## To Dos
 - [ ] Add some tests
 - [ ] Use git2 for fetching and pulling instead of bash-ed git commands
+- [ ] Handle network errors and inform user
