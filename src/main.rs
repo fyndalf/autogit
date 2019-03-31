@@ -10,6 +10,7 @@ use std::path::PathBuf;
 use std::process::Command;
 use structopt::StructOpt;
 
+// Used for nice error messages
 #[macro_use]
 extern crate human_panic;
 
@@ -24,8 +25,10 @@ struct Cli {
     force: bool,
 }
 
-static CHECK_BOX: Emoji = Emoji("✔", "");
-static ERROR: Emoji = Emoji("x", "");
+static SUCCESS: &'static str = "✅";
+static FAILURE: &'static str = "❌";
+static SUCCESS_EMOJI: Emoji = Emoji("✅", SUCCESS);
+static FAILURE_EMOJI: Emoji = Emoji("❌", FAILURE);
 
 fn main() -> CliResult {
     setup_panic!();
@@ -57,11 +60,11 @@ fn main() -> CliResult {
     spinner.set_prefix("");
     spinner.set_message("");
     spinner.finish_with_message("Finished updating");
-    println!("{} Updated {} repositories", CHECK_BOX, update_count);
+    println!("{} Updated {} repositories", SUCCESS_EMOJI, update_count);
     Ok(())
 }
 
-// Recure through subdirectories up until given maximal depth
+// Recurse through subdirectories up until given maximal depth
 fn visit_dirs(
     dir: &PathBuf,
     depth: usize,
@@ -87,7 +90,7 @@ fn visit_dirs(
                         }
                     }
                     Err(e) => {
-                        trace!("{} {:?}", ERROR, e); // errors are expected when folder is not a git directory
+                        trace!("{} {:?}", FAILURE_EMOJI, e); // errors are expected when folder is not a git directory
                         if depth < max_depth {
                             visit_dirs(
                                 &path,
@@ -138,7 +141,7 @@ fn check_if_repo_is_clean(dir: &PathBuf, progress_bar: &ProgressBar) -> Result<b
     let cached_files_changed = cached_diff.stats()?.files_changed();
 
     trace!(
-        "Numer of changed files:{}, number of changed cached files: {}",
+        "Number of changed files:{}, number of changed cached files: {}",
         files_changed,
         cached_files_changed
     );
@@ -156,7 +159,7 @@ fn update_repo(
     let branch_name = get_current_branch(&repo)?;
     let path = dir.as_os_str().to_str().unwrap();
 
-    progress_bar.set_message("Updating ...");
+    progress_bar.set_message("Updating");
     progress_bar.set_prefix(&format!("{} origin/{}", repo.path().display(), branch_name));
 
     if force_update {

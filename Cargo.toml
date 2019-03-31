@@ -1,12 +1,12 @@
 [package]
 name = "autogit"
-version = "0.1.0"
+version = "0.1.1"
 authors = ["Finn K <fyndalf@users.noreply.github.com>"]
 edition = "2018"
 
 [dependencies]
 quicli= "0.4"
-structopt = "0.2.14"
+structopt = "0.2.15"
 git2 = "0.8.0"
 human-panic = "1.0.1"
 console = "0.7.5"
