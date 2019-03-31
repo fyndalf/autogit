@@ -36,6 +36,12 @@ curl -LSfs https://japaric.github.io/trust/install.sh | \
 sh -s -- --git fyndalf/autogit
 ```
 
+To overwrite an existing installation, use
+```bash
+curl -LSfs https://japaric.github.io/trust/install.sh | \
+sh -s -- --git fyndalf/autogit --force
+```
+
 ## Build from source
 
 ```bash
