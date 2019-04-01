@@ -7,12 +7,14 @@ use std::env;
 use std::fs;
 use std::io;
 use std::path::PathBuf;
-use std::process::Command;
 use structopt::StructOpt;
 
 // Used for nice error messages
 #[macro_use]
 extern crate human_panic;
+
+// A wrapper abstracting git operations
+mod git_wrapper;
 
 /// Update all git repositories that are located in subfolders
 #[derive(Debug, StructOpt)]
@@ -113,39 +115,28 @@ fn visit_dirs(
 // Fails if the directory does not contain a git directory.
 fn check_if_repo_is_clean(dir: &PathBuf, progress_bar: &ProgressBar) -> Result<bool, git2::Error> {
     let repo = Repository::open(dir)?;
-    let branch_name = get_current_branch(&repo)?;
-    let path = dir.as_os_str().to_str().unwrap();
+    let branch_name = git_wrapper::get_current_branch(&repo)?;
+
     debug!(
         "Checking {} state={:?}",
         repo.path().display(),
         repo.state()
     );
+
     progress_bar.set_message(&format!("Checking {}", repo.path().display()));
     progress_bar.set_prefix(&format!("{} origin/{}", repo.path().display(), branch_name));
-
     progress_bar.set_message(&format!("Fetching origin/{}", branch_name));
 
-    let mut remote_callbacks = git2::RemoteCallbacks::new();
-    remote_callbacks.credentials(git_credentials_callback);
-    let mut fetch_opts = git2::FetchOptions::new();
-    fetch_opts.remote_callbacks(remote_callbacks);
-    fetch_opts.download_tags(git2::AutotagOption::All);
-
-    repo.find_remote("origin")?
-        .fetch(&[&branch_name], Some(&mut fetch_opts), None)?;
-
-    let diff = repo.diff_index_to_workdir(None, None)?;
-    let files_changed = diff.stats()?.files_changed();
-
-    let cached_diff = repo.diff_tree_to_index(None, None, None)?;
-    let cached_files_changed = cached_diff.stats()?.files_changed();
+    git_wrapper::fetch_origin(&repo, &branch_name)?;
+    let files_changed = git_wrapper::get_diff_size(&repo);
+    let cached_files_changed = git_wrapper::get_cached_diff_size(&repo);
 
     trace!(
-        "Number of changed files:{}, number of changed cached files: {}",
+        "Number of changed files:{:?}, number of changed cached files: {:?}",
         files_changed,
         cached_files_changed
     );
-    Ok(repo.state() == RepositoryState::Clean && files_changed == 0)
+    Ok(repo.state() == RepositoryState::Clean && files_changed == Ok(0))
 }
 
 // Update a git repo on a given path. Discards changes when force is enabled.
@@ -156,77 +147,15 @@ fn update_repo(
     update_count: &mut u16,
 ) -> Result<(), git2::Error> {
     let repo = Repository::open(dir)?;
-    let branch_name = get_current_branch(&repo)?;
-    let path = dir.as_os_str().to_str().unwrap();
+    let branch_name = git_wrapper::get_current_branch(&repo)?;
 
     progress_bar.set_message("Updating");
     progress_bar.set_prefix(&format!("{} origin/{}", repo.path().display(), branch_name));
 
     if force_update {
-        let _head = repo.head()?;
-        let ref_name = format!("refs/remotes/origin/{}", branch_name);
-        let oid = repo.refname_to_id(&ref_name)?;
-        let object = repo.find_object(oid, None).unwrap();
-        repo.reset(&object, git2::ResetType::Hard, None)?;
+        git_wrapper::reset_branch_to_remote(&repo, &branch_name)?;
     }
-
-    debug!("Updating {:?} {}", fs::canonicalize(&dir), branch_name);
-
-    // pull from origin
-    // todo: rework
-    // let reference = repo.find_reference("FETCH_HEAD")?;
-    //let fetch_head_commit = repo.reference_to_annotated_commit(&reference)?;
-    // repo.merge(&[&fetch_head_commit], None, None)?;
-
-    //reset --hard
-    // let repo = git2::Repository::discover(REPO_PATH)?;
-    // let oid = repo.refname_to_id("refs/remotes/origin/master")?;
-    // let object = repo.find_object(oid, None).unwrap();
-    // repo.reset(&object, git2::ResetType::Hard, None)?;
-
-    let _output = Command::new("git")
-        .current_dir(path)
-        .arg("pull")
-        .output()
-        .expect("Failed to execute git pull");
+    git_wrapper::pull_branch_from_remote(&repo)?;
     *update_count += 1;
     Ok(())
-}
-
-// Gets the name of the currently checked out branch. Defaults to master.
-fn get_current_branch(repo: &Repository) -> Result<String, git2::Error> {
-    let head = repo.head()?;
-    let mut path: Vec<&str> = head.name().unwrap().split('/').collect();
-    let branch = path.pop();
-    let branch_name = match branch {
-        None => "master",
-        Some(_) => branch.unwrap(),
-    };
-    Ok(branch_name.to_string())
-}
-
-// callback function for git credentials
-fn git_credentials_callback(
-    _user: &str,
-    _user_from_url: Option<&str>,
-    _cred: git2::CredentialType,
-) -> Result<git2::Cred, git2::Error> {
-    let user = _user_from_url.unwrap_or("git");
-
-    if _cred.contains(git2::CredentialType::USERNAME) {
-        return git2::Cred::username(user);
-    }
-
-    match env::var("GPM_SSH_KEY") {
-        Ok(k) => {
-            debug!(
-                "authenticate with user {} and private key located in {}",
-                user, k
-            );
-            git2::Cred::ssh_key(user, None, std::path::Path::new(&k), None)
-        }
-        _ => Err(git2::Error::from_str(
-            "unable to get private key from GPM_SSH_KEY",
-        )),
-    }
 }
