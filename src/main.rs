@@ -123,16 +123,16 @@ fn check_if_repo_is_clean(dir: &PathBuf, progress_bar: &ProgressBar) -> Result<b
     progress_bar.set_message(&format!("Checking {}", repo.path().display()));
     progress_bar.set_prefix(&format!("{} origin/{}", repo.path().display(), branch_name));
 
-    // fetching branch
     progress_bar.set_message(&format!("Fetching origin/{}", branch_name));
 
-    // repo.find_remote("origin")?.fetch(&[&branch_name], None, None)?;
-    // todo: authenticate and use git2 instead of command
-    let _output = Command::new("git")
-        .current_dir(path)
-        .arg("fetch")
-        .output()
-        .expect("Failed to execute git fetch");
+    let mut remote_callbacks = git2::RemoteCallbacks::new();
+    remote_callbacks.credentials(git_credentials_callback);
+    let mut fetch_opts = git2::FetchOptions::new();
+    fetch_opts.remote_callbacks(remote_callbacks);
+    fetch_opts.download_tags(git2::AutotagOption::All);
+
+    repo.find_remote("origin")?
+        .fetch(&[&branch_name], Some(&mut fetch_opts), None)?;
 
     let diff = repo.diff_index_to_workdir(None, None)?;
     let files_changed = diff.stats()?.files_changed();
@@ -173,6 +173,17 @@ fn update_repo(
     debug!("Updating {:?} {}", fs::canonicalize(&dir), branch_name);
 
     // pull from origin
+    // todo: rework
+    // let reference = repo.find_reference("FETCH_HEAD")?;
+    //let fetch_head_commit = repo.reference_to_annotated_commit(&reference)?;
+    // repo.merge(&[&fetch_head_commit], None, None)?;
+
+    //reset --hard
+    // let repo = git2::Repository::discover(REPO_PATH)?;
+    // let oid = repo.refname_to_id("refs/remotes/origin/master")?;
+    // let object = repo.find_object(oid, None).unwrap();
+    // repo.reset(&object, git2::ResetType::Hard, None)?;
+
     let _output = Command::new("git")
         .current_dir(path)
         .arg("pull")
@@ -192,4 +203,30 @@ fn get_current_branch(repo: &Repository) -> Result<String, git2::Error> {
         Some(_) => branch.unwrap(),
     };
     Ok(branch_name.to_string())
+}
+
+// callback function for git credentials
+fn git_credentials_callback(
+    _user: &str,
+    _user_from_url: Option<&str>,
+    _cred: git2::CredentialType,
+) -> Result<git2::Cred, git2::Error> {
+    let user = _user_from_url.unwrap_or("git");
+
+    if _cred.contains(git2::CredentialType::USERNAME) {
+        return git2::Cred::username(user);
+    }
+
+    match env::var("GPM_SSH_KEY") {
+        Ok(k) => {
+            debug!(
+                "authenticate with user {} and private key located in {}",
+                user, k
+            );
+            git2::Cred::ssh_key(user, None, std::path::Path::new(&k), None)
+        }
+        _ => Err(git2::Error::from_str(
+            "unable to get private key from GPM_SSH_KEY",
+        )),
+    }
 }
