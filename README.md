@@ -6,9 +6,9 @@ Don't you hate having to navigate to every single git repository in your `projec
 
 `autogit`, a small CLI tool built with rust, aims to solve this!
 Simply run `autogit` in the root `projects` folder (or wherever you have your git repos), and it will take a look at each repo and update it if possible.
+The `--force` flag makes the tool discard all changes made locally. If the force-flag is not set and you have not pushed local commits, a merge commit is created. If you have local changes and run the tool, a merge commit will be created. On conflicts, the tool might very well throw an error.
 
-Please note that for now, `git` needs to be installed on your machine.
-Also, be careful when using the tool, especially with the `--force` flag.
+Be careful when using the tool, especially with the `--force` flag.
 
 ## Usage
 
@@ -67,5 +67,6 @@ is also encouraged.
 
 ## To Dos
 - [ ] Add some tests
-- [ ] Use git2 for fetching and pulling instead of bash-ed git commands
+- [x] Use git2 for fetching and pulling instead of bash-ed git commands
 - [ ] Handle network errors and inform user
+- [ ] Handle local conflicts on pulling and notify user
