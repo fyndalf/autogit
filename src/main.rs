@@ -115,7 +115,10 @@ fn visit_dirs(
 // Fails if the directory does not contain a git directory.
 fn check_if_repo_is_clean(dir: &PathBuf, progress_bar: &ProgressBar) -> Result<bool, git2::Error> {
     let repo = Repository::open(dir)?;
+    progress_bar.set_message(&format!("Checking {}", repo.path().display()));
+
     let branch_name = git_wrapper::get_current_branch(&repo)?;
+    progress_bar.set_prefix(&format!("{} origin/{}", repo.path().display(), branch_name));
 
     debug!(
         "Checking {} state={:?}",
@@ -123,10 +126,7 @@ fn check_if_repo_is_clean(dir: &PathBuf, progress_bar: &ProgressBar) -> Result<b
         repo.state()
     );
 
-    progress_bar.set_message(&format!("Checking {}", repo.path().display()));
-    progress_bar.set_prefix(&format!("{} origin/{}", repo.path().display(), branch_name));
     progress_bar.set_message(&format!("Fetching origin/{}", branch_name));
-
     git_wrapper::fetch_origin(&repo, &branch_name)?;
     let files_changed = git_wrapper::get_diff_size(&repo);
     let cached_files_changed = git_wrapper::get_cached_diff_size(&repo);
