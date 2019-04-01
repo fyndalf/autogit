@@ -1,4 +1,3 @@
-use console::Emoji;
 use git2::Repository;
 use git2::RepositoryState;
 use indicatif::{ProgressBar, ProgressStyle};
@@ -26,11 +25,6 @@ struct Cli {
     #[structopt(long = "force", short = "f")]
     force: bool,
 }
-
-static SUCCESS: &'static str = "✅";
-static FAILURE: &'static str = "❌";
-static SUCCESS_EMOJI: Emoji = Emoji("✅", SUCCESS);
-static FAILURE_EMOJI: Emoji = Emoji("❌", FAILURE);
 
 fn main() -> CliResult {
     setup_panic!();
@@ -62,7 +56,7 @@ fn main() -> CliResult {
     spinner.set_prefix("");
     spinner.set_message("");
     spinner.finish_with_message("Finished updating");
-    println!("{} Updated {} repositories", SUCCESS_EMOJI, update_count);
+    println!("Updated {} repositories", update_count);
     Ok(())
 }
 
@@ -92,7 +86,7 @@ fn visit_dirs(
                         }
                     }
                     Err(e) => {
-                        trace!("{} {:?}", FAILURE_EMOJI, e); // errors are expected when folder is not a git directory
+                        trace!("{:?}", e); // errors are expected when folder is not a git directory
                         if depth < max_depth {
                             visit_dirs(
                                 &path,
@@ -152,11 +146,10 @@ fn update_repo(
     progress_bar.set_message("Updating");
     progress_bar.set_prefix(&format!("{} origin/{}", repo.path().display(), branch_name));
 
-    // todo: check if it works!
     if force_update {
         git_wrapper::reset_branch_to_remote(&repo, &branch_name)?;
     }
-    // todo: check if it works!
+
     git_wrapper::pull_branch_from_remote(&repo)?;
     *update_count += 1;
     Ok(())
