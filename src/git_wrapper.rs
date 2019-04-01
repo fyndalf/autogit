@@ -15,6 +15,7 @@ pub fn get_current_branch(repo: &Repository) -> Result<String, git2::Error> {
 }
 
 // callback function for git credentials
+// todo: check!
 fn git_credentials_callback(
     _user: &str,
     _user_from_url: Option<&str>,

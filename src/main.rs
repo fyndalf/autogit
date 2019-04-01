@@ -152,9 +152,11 @@ fn update_repo(
     progress_bar.set_message("Updating");
     progress_bar.set_prefix(&format!("{} origin/{}", repo.path().display(), branch_name));
 
+    // todo: check if it works!
     if force_update {
         git_wrapper::reset_branch_to_remote(&repo, &branch_name)?;
     }
+    // todo: check if it works!
     git_wrapper::pull_branch_from_remote(&repo)?;
     *update_count += 1;
     Ok(())
