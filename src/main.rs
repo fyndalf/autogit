@@ -121,6 +121,9 @@ fn check_if_repo_is_clean(dir: &PathBuf, progress_bar: &ProgressBar) -> Result<b
     );
 
     progress_bar.set_message(&format!("Fetching origin/{}", branch_name));
+
+    println!("fetching!");
+
     git_wrapper::fetch_origin(&repo, &branch_name)?;
     let files_changed = git_wrapper::get_diff_size(&repo);
     let cached_files_changed = git_wrapper::get_cached_diff_size(&repo);

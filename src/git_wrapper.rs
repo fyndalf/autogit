@@ -15,14 +15,12 @@ pub fn get_current_branch(repo: &Repository) -> Result<String, git2::Error> {
 }
 
 // callback function for git credentials
-// todo: check!
 fn git_credentials_callback(
     _user: &str,
     _user_from_url: Option<&str>,
     _cred: git2::CredentialType,
 ) -> Result<git2::Cred, git2::Error> {
     let user = _user_from_url.unwrap_or("git");
-
     if _cred.contains(git2::CredentialType::USERNAME) {
         return git2::Cred::username(user);
     }
@@ -41,10 +39,38 @@ fn git_credentials_callback(
     }
 }
 
+fn another_auth_callback(
+    _user: &str,
+    _user_from_url: Option<&str>,
+    _cred: git2::CredentialType,
+    _repo: &Repository,
+) -> Result<git2::Cred, git2::Error> {
+    let user_name = _user_from_url.unwrap_or("git");
+    let mut cred_helper = git2::CredentialHelper::new(_user);
+    cred_helper.config(&_repo.config()?);
+    println!("looooool");
+    let creds = if _cred.contains(git2::CredentialType::SSH_KEY) {
+        println!("ssh!");
+        git2::Cred::ssh_key_from_agent(user_name)
+    } else if _cred.contains(git2::CredentialType::USER_PASS_PLAINTEXT) {
+        println!("user and pass");
+        git2::Cred::credential_helper(&_repo.config()?, _user, Some(user_name))
+    } else if _cred.contains(git2::CredentialType::DEFAULT) {
+        println!("default");
+        git2::Cred::default()
+    } else {
+        println!("no auth!");
+        Err(git2::Error::from_str("no authentication available"))
+    };
+    Ok(creds?)
+}
+
 // fetches the branch from origin
 pub fn fetch_origin(repo: &Repository, branch_name: &str) -> Result<(), git2::Error> {
+    println!("fetching");
     let mut remote_callbacks = git2::RemoteCallbacks::new();
-    remote_callbacks.credentials(git_credentials_callback);
+    // remote_callbacks.credentials(git_credentials_callback);
+    remote_callbacks.credentials(|a, b, c| another_auth_callback(a, b, c, repo));
     let mut fetch_opts = git2::FetchOptions::new();
     fetch_opts.remote_callbacks(remote_callbacks);
     fetch_opts.download_tags(git2::AutotagOption::All);
@@ -69,6 +95,7 @@ pub fn get_cached_diff_size(repo: &Repository) -> Result<usize, git2::Error> {
 }
 
 pub fn reset_branch_to_remote(repo: &Repository, branch_name: &str) -> Result<(), git2::Error> {
+    println!("resetting");
     let _head = repo.head()?;
     let ref_name = format!("refs/remotes/origin/{}", branch_name);
     let oid = repo.refname_to_id(&ref_name)?;
@@ -78,6 +105,8 @@ pub fn reset_branch_to_remote(repo: &Repository, branch_name: &str) -> Result<()
 }
 
 pub fn pull_branch_from_remote(repo: &Repository) -> Result<(), git2::Error> {
+    // todo: what happens on conflicts? Display to user?
+    println!("pulling");
     let reference = repo.find_reference("FETCH_HEAD")?;
     let fetch_head_commit = repo.reference_to_annotated_commit(&reference)?;
     repo.merge(&[&fetch_head_commit], None, None)?;
