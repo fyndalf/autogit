@@ -12,7 +12,7 @@ Be careful when using the tool, especially with the `--force` flag.
 
 ## Usage
 
-```
+```shell
 autogit 0.1.0
 Finn K <fyndalf@users.noreply.github.com>
 Update all git repositories that are located in subfolders
@@ -37,6 +37,7 @@ sh -s -- --git fyndalf/autogit
 ```
 
 To overwrite an existing installation, use
+
 ```bash
 curl -LSfs https://japaric.github.io/trust/install.sh | \
 sh -s -- --git fyndalf/autogit --force
@@ -50,13 +51,16 @@ cargo build --release
 ```
 
 For development,
-```
+
+```bash
 cargo fmt
 cargo clippy
 ```
+
 is also encouraged.
 
 ### Dependencies
+
 - [quicli](https://github.com/killercup/quicli)
 - [git2](https://github.com/rust-lang/git2-rs)
 - [structop](https://github.com/TeXitoi/structopt)
@@ -66,6 +70,7 @@ is also encouraged.
 - [trust](https://github.com/japaric/trust)
 
 ## To Dos
+
 - [ ] Add some tests
 - [x] Use git2 for fetching and pulling instead of bash-ed git commands
 - [ ] Handle network errors and inform user
